@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WasteSort AI ♻️</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #0f172a; /* clean dark blue */
+    color: #e2e8f0;
+}
+
+/* Center container */
+.container {
+    max-width: 500px;
+    margin: 60px auto;
+    padding: 20px;
+}
+
+/* Title */
+h1 {
+    text-align: center;
+    color: #22c55e;
+    margin-bottom: 25px;
+}
+
+/* Upload panel */
+.panel {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 10px;
+    border: 1px solid #334155;
+}
+
+input[type="file"] {
+    width: 100%;
+    margin-bottom: 10px;
+    padding: 8px;
+    background: #0f172a;
+    color: #fff;
+    border: 1px solid #334155;
+    border-radius: 6px;
+}
+
+button {
+    width: 100%;
+    padding: 10px;
+    background: #22c55e;
+    border: none;
+    border-radius: 6px;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #16a34a;
+}
+
+/* Spinner */
+#spinner {
+    display: none;
+    text-align: center;
+    margin: 15px 0;
+}
+
+/* Results section */
+.results-title {
+    margin-top: 25px;
+    font-size: 18px;
+    font-weight: bold;
+    border-bottom: 1px solid #334155;
+    padding-bottom: 5px;
+}
+
+/* Cards */
+.result-card {
+    background: #1e293b;
+    padding: 15px;
+    margin-top: 15px;
+    border-radius: 10px;
+    border-left: 4px solid #22c55e;
+}
+
+.result-card h4 {
+    margin: 0 0 10px;
+    color: #22c55e;
+}
+
+.result-card p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+/* Error */
+.error {
+    color: #ef4444;
+    text-align: center;
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+    <h1>WasteSort AI ♻️</h1>
+
+    <div class="panel">
+        <input type="file" id="fileInput" multiple accept="image/*">
+        <button id="analyzeBtn">Analyze</button>
+    </div>
+
+    <div id="spinner">Processing...</div>
+
+    <div class="results-title">Analysis Results</div>
+    <div id="resultsList"></div>
+</div>
+
+<script>
+const analyzeBtn = document.getElementById("analyzeBtn");
+const fileInput = document.getElementById("fileInput");
+const resultsList = document.getElementById("resultsList");
+const spinner = document.getElementById("spinner");
+
+async function analyzeWaste(files) {
+    resultsList.innerHTML = "";
+    spinner.style.display = "block";
+
+    const formData = new FormData();
+    for (let file of files) {
+        formData.append("files", file);
+    }
+
+    try {
+        const res = await fetch("http://127.0.0.1:8000/analyze-multiple", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+
+        data.forEach((item, index) => {
+            const card = document.createElement("div");
+            card.className = "result-card";
+
+            if (item.error) {
+                card.innerHTML = `<p class="error">Image #${index+1}: ${item.error}</p>`;
+            } else {
+                card.innerHTML = `
+                    <h4>Image #${index+1}: ${item.type || "Unknown"}</h4>
+                    <p><strong>Estimated Age:</strong> ${item.age || "Unknown"}</p>
+                    <p><strong>Hazard Check:</strong> ${item.hazard || "No hazard info."}</p>
+                    <p><strong>Recycling:</strong> ${item.recycle_method || "Follow local rules."}</p>
+                    <p><strong>Solution:</strong> ${item.solution || "Handle properly."}</p>
+                `;
+            }
+
+            resultsList.appendChild(card);
+        });
+
+    } catch (err) {
+        resultsList.innerHTML = `<p class="error">API Error</p>`;
+    }
+
+    spinner.style.display = "none";
+}
+
+analyzeBtn.addEventListener("click", () => {
+    if (fileInput.files.length === 0) {
+        alert("Select image first");
+        return;
+    }
+    analyzeWaste(fileInput.files);
+});
+</script>
+
+</body>
+</html>
